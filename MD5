@@ -1,5 +1,6 @@
-b0056699a9ce86a12cd933b99c51f83b *DESCRIPTION
+dcaaf3558aedd332b97078310c813324 *DESCRIPTION
 9ebc216b45496d7265b5f9c4866ca55a *NAMESPACE
+2a2d2673b09631fc6eda8c615e416291 *NEWS
 14940b3c5e9e10bb7b0a7e7d21137560 *R/arrangeC.R
 602d4570627007cf957c5f49ab704a20 *R/barplot2.R
 f6cd21135bf2912af261b6cc2e29b43e *R/ceplot.R
@@ -31,7 +32,7 @@ fbb55003689e230f177c73a3bb93e85a *R/mouseclick.separate.full.R
 f655847625204d91505f3098464d7910 *R/plotxc.R
 9f460213206ccf324277b9d84e7afd05 *R/plotxs.R
 1ea6c5f3408c0c1c4ad9d145dfbe753a *R/plotxsnew.R
-43d336c1298240a85b887f6b4f2f11cc *R/plotxsshiny.r
+43d336c1298240a85b887f6b4f2f11cc *R/plotxsshiny.R
 d87be9aa3492b74b96d7231d8cf6dca2 *R/polygonarea.R
 f638044e1aa7301830e796956e4ffe11 *R/predict1.R
 de9ed771d137a62a55d53ab0a3e43c5d *R/savingby2d.R
@@ -40,7 +41,7 @@ ebba25c44e8398f80cc0402d657d0468 *R/update.R
 6776ac1e44162e3f961beee114fa5b9a *R/visualweight.R
 68387b44aa360d9684708be5e84bd9ff *R/xslegend.R
 5f35301b4a58d4018d6c0d523d3e52b9 *R/xy2index.R
-8939786996fb4b3da98ba14fe851bc87 *README.md
+4a0b9a5a55f3b23adfe9dbbc20a1ea58 *README.md
 f451d1cbe355b2806641212e6cd0bb25 *data/crab.rda
 1f4c534f78c883308959c1b1bcdb93a6 *data/powerplant.rda
 be928dc7e41d695fe2496d0c96e336e3 *data/wine.rda
@@ -50,7 +51,7 @@ a41d14e4a488245bc97b6ca97f667d83 *demo/condvis-classification.R
 8ff586aec42e0c08fc309a0f3d0fe8b3 *man/arrangeC.Rd
 ec317dcf8a4c5b0516d051e13b341709 *man/ceplot.Rd
 c3dddc56e584e4a485c17d0204f1ab57 *man/condtour.Rd
-38285b9bb4118707e3b0b633b8dc23f3 *man/condvis-package.Rd
+27568ca5ea6e6878503a4d22c6fcf822 *man/condvis-package.Rd
 eba118aecdf2bcaa6f01c4f4febdc7d8 *man/cont2color.Rd
 80c84b4c082769ae774894315d1e59e8 *man/crab.Rd
 89f5e4d3b7034f82b67c016b29c6a91d *man/daisy1.Rd
