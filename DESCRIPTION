@@ -1,39 +1,33 @@
 Package: condvis
 Type: Package
 Title: Conditional Visualization for Statistical Models
-Version: 0.2-2
-Date: 2016-05-01
+Version: 0.3-0
+Date: 2016-07-01
 Authors@R: c(
   person("Mark", "O'Connell", email = "mark.oconnell@maths.nuim.ie",
   role = c("aut", "cre")),
   person("Catherine", "Hurley", role = "ths"),
   person("Katarina", "Domijan", role = "ths"),
-  person("Achim", "Zeileis", role = "ctb"),
-  person("Anja", "Struyf", role = "ctb"),
-  person("Mia", "Hubert", role = "ctb"),
-  person("Peter", "Rousseeuw", role = "ctb"),
-  person("Martin", "Maechler", role = "ctb"),
-  person("R Core Team", role = "ctb") )
+  person("Achim", "Zeileis", role = "ctb", comment = "spineplot, see copied.R"),
+  person("R Core Team", role = "ctb", comment = "barplot, see copied.R") )
 Depends: R (>= 2.1.0)
+Imports: graphics, grDevices, stats, utils, MASS
 Suggests: RColorBrewer, shiny, scagnostics, cluster, hdrcde, gplots,
-        TSP
+        TSP, DendSer, testthat
 Description: Exploring fitted model structures by interactively taking 2-D and
-  3-D sections in data space.
+    3-D sections in data space.
 License: GPL (>= 2)
 LazyData: false
-Imports: graphics, grDevices, stats, utils, MASS
-NeedsCompilation: yes
-BugReports: https://bitbucket.org/markajoc/condvis/issues
-Packaged: 2016-04-04 10:16:18 UTC; mark
+BugReports: https://github.com/markajoc/condvis/issues
+URL: http://markajoc.github.io/condvis/
+RoxygenNote: 5.0.1.9000
+Packaged: 2016-06-28 11:33:27 UTC; mark
 Author: Mark O'Connell [aut, cre],
   Catherine Hurley [ths],
   Katarina Domijan [ths],
-  Achim Zeileis [ctb],
-  Anja Struyf [ctb],
-  Mia Hubert [ctb],
-  Peter Rousseeuw [ctb],
-  Martin Maechler [ctb],
-  R Core Team [ctb]
+  Achim Zeileis [ctb] (spineplot, see copied.R),
+  R Core Team [ctb] (barplot, see copied.R)
 Maintainer: Mark O'Connell <mark.oconnell@maths.nuim.ie>
+NeedsCompilation: no
 Repository: CRAN
-Date/Publication: 2016-04-04 18:02:41
+Date/Publication: 2016-06-28 23:47:53

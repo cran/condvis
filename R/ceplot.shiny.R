@@ -1,286 +1,254 @@
 ceplot.shiny <-
-## this code really needs a rewrite!
-function(data, model, response = NULL, S = NULL, C = NULL, cex.axis = NULL, 
-    cex.lab = NULL, tck = NULL, Corder = "default")
+function (data, model, response = NULL, S = NULL, C = NULL, sigma = NULL, lambda
+  = NULL, distance = "euclidean", cex.axis = NULL, cex.lab = NULL, tck = NULL,
+  view3d = FALSE, Corder = "default", conf = FALSE, separate = TRUE,
+  select.colour = "blue", select.cex = 1, select.lwd = 2, select.type =
+  "minimal", probs = FALSE, col = "black", pch = 1, residuals = FALSE, xc.cond =
+  NULL, packages = NULL)
 {
-    ui <- NULL
-    server <- NULL
-    data <- na.omit(data)
-    if(!requireNamespace("shiny", quietly = TRUE))
-        stop("requires package 'shiny'")
-    else if (!exists("shinyApp")) attachNamespace("shiny")    
-    model <- if (!identical(class(model), "list"))
-        list(model)
-    else model
-    model.name <- if (!is.null(names(model)))
-        names(model)
-    else NULL
-    varnamestry <- try(getvarnames(model[[1]]), silent = TRUE)
-    response <- if (is.null(response))
-        if (class(varnamestry) != "try-error")
-           which(colnames(data) == varnamestry$response[1])
-        else stop("could not extract response from 'model'.")
-    else if (is.character(response))
-            which(colnames(data) == response)
-        else response
-    S <- if(is.null(S)){
-         (1:ncol(data))[-response][1L]
-        } else if (is.character(S))
-            vapply(S, function(x) which(colnames(data) == x), numeric(1))
-            else S
-    C <- if (is.null(C))
-        arrangeC(data[, -c(response, S)])
-    else C
-    try(
-        if (class(varnamestry) != "try-error"){
-            possibleC <- unique(unlist(lapply(lapply(model, getvarnames), `[[`, 
-                2)))
-            possibleC <- possibleC[possibleC %in% colnames(data)]
-            C <- arrangeC(data[, possibleC[!(possibleC %in% colnames(data)[S])], 
-                drop = FALSE], method = Corder)
-        }     
-    , silent = TRUE)
-    C <- if (all(vapply(C, is.numeric, logical(1))))
-        as.list(C)
-    else if (all(vapply(C, is.character, logical(1))))
-            lapply(C, match, table = colnames(data))
-        else
-            stop("'C' should be a vector or list (containing vectors of length",
-                 " 1 or 2) with integer column indices or character variable",
-                 " names from 'data'.")
-    uniqC <- unique(unlist(C))
-    n.selector.cols <- ceiling(length(C) / 4L)
-    if (any(response %in% uniqC))
-        stop("cannot have 'response' variable in 'C'")
-    if (any(response %in% S))
-        stop("cannot have 'response' variable in 'S'")
-    if (!identical(length(unique(vapply(lapply(model, getvarnames),
-        `[[`, character(1), 1))), 1L))
-        stop("cannot compare models with different response variables")
-    if (!identical(length(intersect(S, uniqC)), 0L))
-        stop("cannot have variables common to both 'S' and 'C'")
-    Xc.cond <- data[1, uniqC, drop = FALSE]
-    rownames(Xc.cond) <- "Xc.cond"
-    tmp <- new.env()
-    assign("Xc.cond", Xc.cond, tmp)
-    Xc <- data[, uniqC, drop = FALSE]
-    xcplotsize <- 190
-    contplot <- !is.factor(data[, response]) & !any(vapply(data[, S, drop = FALSE], is.factor, logical(1))) & identical(length(S), 2L)
-    eval(parse(text = paste("
-        ui <- fluidPage(
-            fluidRow(
-                column(5
-                    , fluidRow(
-                        column(8, 
-                            if (contplot) {
-                                tabsetPanel(
-                                    tabPanel('Contour', plotOutput('plotS', height = '100%', width = '80%'), value = 1),
-                                    tabPanel('Perspective', plotOutput('plotS2', height = '100%', width = '80%'), value = 2)
-                                , id = 'tab')
-                            } else plotOutput('plotS', height = '100%', width = '80%')
-                        ),
-                        column(3, if (identical(length(S), 2L)) plotOutput('legend', height = 400, width = '20%'))
-                    )
-                    , actionButton('saveButton', 'Take snapshot (pdf)')
-                    , conditionalPanel(condition = 'input.tab == 2', numericInput('phi', 'Vertical rotation: ', 20, -180, 180))
-                    , conditionalPanel(condition = 'input.tab == 2', numericInput('theta', 'Horizontal rotation: ', 45, -180, 180))
-                    , sliderInput('sigma', 'Weighting function parameter: ', 0.01, 5, step = 0.01, value = 1)
-                    , radioButtons('type', 'Weighting function type:', c('euclidean', 'maxnorm'))
-                ),
-                column(7,
-                    fluidRow( helpText(strong('Condition selector plots')) ),
-                    fluidRow(
-                    column(3,",
-                        paste(" if (length(C) >= ", 1:4, ") {plotOutput('plotC", 1:4, "', height = ", xcplotsize,", width = ", xcplotsize,", click = 'plotC", 1:4, "click') }", sep = "", collapse = ",\n")
-                    ,"
-                    )
-                    , column(3,",
-                        paste("if (length(C) >= ", 5:8, ") {plotOutput('plotC", 5:8, "', height = ", xcplotsize,", width = ", xcplotsize,", click = 'plotC", 5:8, "click') }", sep = "", collapse = ",\n")
-                    ,"
-                    )
-                    , column(3,",
-                        paste("if (length(C) >= ", 9:12, ") {plotOutput('plotC", 9:12, "', height = ", xcplotsize,", width = ", xcplotsize,", click = 'plotC", 9:12, "click') }", sep = "", collapse = ",\n")
-                    ,"
-                    )  
-                    , column(3,",
-                        paste("if (length(C) >= ", 13:16, ") {plotOutput('plotC", 13:16, "', height = ", xcplotsize,", width = ", xcplotsize,", click = 'plotC", 13:16, "click') }", sep = "", collapse = ",\n")
-                    ,"
-                    ) 
-                    )
-                    , fluidRow( helpText(strong('Current condition/section')) )
-                    , fluidRow( tableOutput('text') )
-                )               
-            )
+  ## Check for shiny package, and stop if not installed
+
+  if(!requireNamespace("shiny", quietly = TRUE))
+    stop("requires package 'shiny'")
+  else if (!exists("runApp")) attachNamespace("shiny")
+
+  ## Set up the initial section
+
+  xc.cond <- if (is.null(xc.cond))
+    data[1, !colnames(data) %in% c(S, response)]
+  else xc.cond
+  #data.frame(lapply(data[, !colnames(data) %in% c(S, response)], mode1))
+
+  ## Set some variables and the similarityweight function
+
+  uniqC <- unique(unlist(C))
+  xcplots <- list()
+  plotlegend <- length(S) == 2
+  n.selector.cols <- ceiling(length(C) / 4L)
+  selector.colwidth <- 2
+  height <- 8
+  col <- rep(col, length.out = nrow(data))
+  need3d <- identical(length(S), 2L) && all(vapply(data[, S, drop = FALSE],
+    is.numeric, logical(1L))) && is.numeric(data[, response[1]])
+  seqC <- seq_along(C)
+  lenC <- length(C)
+  wd <- getwd()
+
+  vwfun <- .similarityweight(xc = data[, uniqC, drop = FALSE])
+
+  ## These are the packages required to call predict on all models in 'model'
+  ## If not supplied, all packages attached to the search path at the time of
+  ## calling ceplot are recorded.
+
+  packages <- if (is.null(packages))
+    rev(gsub("package:", "", grep("package:", search(), value = TRUE)))
+  else packages
+
+  ## Function to create the shiny ui.R file. 'deploy' switch removes certain
+  ## elements when deploying the application.
+
+  ui <- function (deploy = FALSE)
+  {
+  paste0('
+  ## This ui.R file was created by condvis:::ceplot.shiny
+
+  library(shiny)
+  load("app.Rdata")
+  h <- "170px"
+  hS <- "350px"
+  basicPage(
+    column(4,
+      if (need3d) {
+        tabsetPanel(
+          tabPanel("Contour",
+            plotOutput("plotS", height = hS, width = hS),
+            value = 1),
+          tabPanel("Perspective",
+            plotOutput("plotS3D", height = hS, width = hS),
+            value = 2),
+          id = "tab"
         )
-    ")))
-    
-    eval(parse(text = paste("
-        server <-
-        function (input, output){
-            output$text <- renderTable({
-                Xc.cond <- get('Xc.cond', envir = tmp)", paste("
-            if (!is.null(input$plotC", 1:length(C), "click$x)){
-                arefactors <- unlist(lapply(data[, C[[", 1:length(C), "]], drop = FALSE], is.factor))
-                if (identical(length(arefactors), 1L)){
-                    if(arefactors)
-                        Xc.cond[, names(data)[C[[", 1:length(C), "]]]] <- factor(levels(data[, names(data)[C[[", 1:length(C), "]]]])[which.min(abs(input$plotC", 1:length(C), "click$x - (1:length(levels(data[, names(data)[C[[", 1:length(C), "]]]])))))], levels = levels(data[, names(data)[C[[", 1:length(C), "]]]]))
-                    else Xc.cond[, names(data)[C[[", 1:length(C), "]]]] <- input$plotC", 1:length(C), "click$x
-                }
-                if (identical(length(arefactors), 2L)){
-                    if (all(arefactors)){
-            
-                    } else if (any(arefactors)){
-                       Xc.cond[, names(data)[C[[", 1:length(C), "]]][which(arefactors)]] <- factor(levels(data[, names(data)[C[[", 1:length(C), "]]][which(arefactors)]])[which.min(abs(input$plotC", 1:length(C), "click$x - (1:length(levels(data[, names(data)[C[[", 1:length(C), "]]][which(arefactors)]])))))], levels = levels(data[, names(data)[C[[", 1:length(C), "]]][which(arefactors)]]))
-                        Xc.cond[, names(data)[C[[", 1:length(C), "]]][which(!arefactors)]] <- input$plotC", 1:length(C), "click$y
-                        } else {
-                            Xc.cond[, names(data)[C[[", 1:length(C), "]]][1]] <- input$plotC", 1:length(C), "click$x
-                            Xc.cond[, names(data)[C[[", 1:length(C), "]]][2]] <- input$plotC", 1:length(C), "click$y
-                        }
-            
-                }
-                assign('Xc.cond', Xc.cond, envir = tmp) 
-            }
-            ", sep = "", collapse = ""),"
-            colnames(Xc.cond) <- vapply(colnames(Xc.cond), substr, character(1), 1, 3)
-            Xc.cond
-            })
-            output$legend <- renderPlot({
-                xslegend(y = data[, response], name = colnames(data)[response])
-            }, width = 100, height = 400)
-            output$plotS <- renderPlot({
-            Xc.cond <- get('Xc.cond', envir = tmp)", paste("
-            if (!is.null(input$plotC", 1:length(C), "click$x)){
-                arefactors <- unlist(lapply(data[, C[[", 1:length(C), "]], drop = FALSE], is.factor))
-                if (identical(length(arefactors), 1L)){
-                    if(arefactors)
-                        Xc.cond[, names(data)[C[[", 1:length(C), "]]]] <- factor(levels(data[, names(data)[C[[", 1:length(C), "]]]])[which.min(abs(input$plotC", 1:length(C), "click$x - (1:length(levels(data[, names(data)[C[[", 1:length(C), "]]]])))))], levels = levels(data[, names(data)[C[[", 1:length(C), "]]]]))
-                    else Xc.cond[, names(data)[C[[", 1:length(C), "]]]] <- input$plotC", 1:length(C), "click$x
-                }
-                if (identical(length(arefactors), 2L)){
-                    if (all(arefactors)){
-            
-                    } else if (any(arefactors)){
-                       Xc.cond[, names(data)[C[[", 1:length(C), "]]][which(arefactors)]] <- factor(levels(data[, names(data)[C[[", 1:length(C), "]]][which(arefactors)]])[which.min(abs(input$plotC", 1:length(C), "click$x - (1:length(levels(data[, names(data)[C[[", 1:length(C), "]]][which(arefactors)]])))))], levels = levels(data[, names(data)[C[[", 1:length(C), "]]][which(arefactors)]]))
-                        Xc.cond[, names(data)[C[[", 1:length(C), "]]][which(!arefactors)]] <- input$plotC", 1:length(C), "click$y
-                        } else {
-                            Xc.cond[, names(data)[C[[", 1:length(C), "]]][1]] <- input$plotC", 1:length(C), "click$x
-                            Xc.cond[, names(data)[C[[", 1:length(C), "]]][2]] <- input$plotC", 1:length(C), "click$y
-                        }
-            
-                }
-                assign('Xc.cond', Xc.cond, envir = tmp) 
-            }
-            ", sep = "", collapse = ""),"
-                    vw <- visualweight(xc = Xc, xc.cond = get('Xc.cond', envir = tmp), sigma = input$sigma, distance = input$type)
-                    k <- vw$k
-                    data.colour <- rgb(1 - k, 1 - k, 1 - k)
-                    data.order <- vw$order
-                    plotxsobject <- plotxs1(xs = data[, S, drop = FALSE],
-                        y = data[, response, drop = FALSE], xc.cond = get('Xc.cond', envir = tmp), model = model,
-                        model.colour = NULL, model.lwd = NULL, model.lty = NULL,
-                        model.name = model.name, yhat = NULL, mar = NULL,
-                        data.colour = data.colour, data.order = data.order, view3d = FALSE)
-            }, width = 400, height = 400)
-            output$plotS2 <- renderPlot({
-            Xc.cond <- get('Xc.cond', envir = tmp)", paste("
-            if (!is.null(input$plotC", 1:length(C), "click$x)){
-                arefactors <- unlist(lapply(data[, C[[", 1:length(C), "]], drop = FALSE], is.factor))
-                if (identical(length(arefactors), 1L)){
-                    if(arefactors)
-                        Xc.cond[, names(data)[C[[", 1:length(C), "]]]] <- factor(levels(data[, names(data)[C[[", 1:length(C), "]]]])[which.min(abs(input$plotC", 1:length(C), "click$x - (1:length(levels(data[, names(data)[C[[", 1:length(C), "]]]])))))], levels = levels(data[, names(data)[C[[", 1:length(C), "]]]]))
-                    else Xc.cond[, names(data)[C[[", 1:length(C), "]]]] <- input$plotC", 1:length(C), "click$x
-                }
-                if (identical(length(arefactors), 2L)){
-                    if (all(arefactors)){
-            
-                    } else if (any(arefactors)){
-                       Xc.cond[, names(data)[C[[", 1:length(C), "]]][which(arefactors)]] <- factor(levels(data[, names(data)[C[[", 1:length(C), "]]][which(arefactors)]])[which.min(abs(input$plotC", 1:length(C), "click$x - (1:length(levels(data[, names(data)[C[[", 1:length(C), "]]][which(arefactors)]])))))], levels = levels(data[, names(data)[C[[", 1:length(C), "]]][which(arefactors)]]))
-                        Xc.cond[, names(data)[C[[", 1:length(C), "]]][which(!arefactors)]] <- input$plotC", 1:length(C), "click$y
-                        } else {
-                            Xc.cond[, names(data)[C[[", 1:length(C), "]]][1]] <- input$plotC", 1:length(C), "click$x
-                            Xc.cond[, names(data)[C[[", 1:length(C), "]]][2]] <- input$plotC", 1:length(C), "click$y
-                        }
-            
-                }
-                assign('Xc.cond', Xc.cond, envir = tmp) 
-            }
-            ", sep = "", collapse = ""),"
-                    vw <- visualweight(xc = Xc, xc.cond = get('Xc.cond', envir = tmp), sigma = input$sigma, distance = input$type)
-                    k <- vw$k
-                    data.colour <- rgb(1 - k, 1 - k, 1 - k)
-                    data.order <- vw$order
-                    plotxsobject <- plotxs.shiny(xs = data[, S, drop = FALSE],
-                        y = data[, response, drop = FALSE], xc.cond = get('Xc.cond', envir = tmp), model = model,
-                        model.colour = NULL, model.lwd = NULL, model.lty = NULL,
-                        model.name = model.name, yhat = NULL, mar = NULL,
-                        data.colour = data.colour, data.order = data.order, view3d = TRUE, phi3d = input$phi, theta3d = input$theta)
-            }, width = 400, height = 400)
-            ", paste("
-            output$plotC", 1:length(C), " <- renderPlot({
-                o <- plotxc(xc = data[, C[[", 1:length(C), "]]], 
-                    xc.cond = get('Xc.cond', envir = tmp)[, names(data)[C[[", 1:length(C), "]]]],
-                    name = colnames(data)[C[[", 1:length(C), "]]],
-                    select.colour = 'blue', select.lwd = 2, cex.axis = cex.axis,
-                    cex.lab = cex.lab, tck = tck, shiny = TRUE)            
-                Xc.cond <- get('Xc.cond', envir = tmp)
-            if (!is.null(input$plotC", 1:length(C), "click$x)){
-                arefactors <- unlist(lapply(data[, C[[", 1:length(C), "]], drop = FALSE], is.factor))
-                if (identical(length(arefactors), 1L)){
-                    if(arefactors)
-                        Xc.cond[, names(data)[C[[", 1:length(C), "]]]] <- factor(levels(data[, names(data)[C[[", 1:length(C), "]]]])[which.min(abs(input$plotC", 1:length(C), "click$x - (1:length(levels(data[, names(data)[C[[", 1:length(C), "]]]])))))], levels = levels(data[, names(data)[C[[", 1:length(C), "]]]]))
-                    else Xc.cond[, names(data)[C[[", 1:length(C), "]]]] <- input$plotC", 1:length(C), "click$x
-                }
-                if (identical(length(arefactors), 2L)){
-                    if (all(arefactors)){
-                        varnames <- o$name
-                        sptmp <- o$sptmp
-                        rectcoords <- data.frame(sptmp$xleft, sptmp$xright, 
-                            sptmp$ybottom, sptmp$ytop)
-                        if (c(input$plotC", 1:length(C), "click$x, input$plotC", 1:length(C), "click$y) %inrectangle% 
-                            c(min(sptmp$xleft), max(sptmp$xright) ,
-                            min(sptmp$ybottom), max(sptmp$ytop)) ){
-                                comb.index <- apply(rectcoords, 1L, 
-                                    `%inrectangle%`, point = c(input$plotC", 1:length(C), "click$x, input$plotC", 1:length(C), "click$y))
-                                if (any(comb.index)){
-                                    Xc.cond[, names(data)[C[[", 1:length(C), "]]][1]] <- as.factor(sptmp$xnames)[comb.index]
-                                    Xc.cond[, names(data)[C[[", 1:length(C), "]]][2]] <- as.factor(sptmp$ynames)[comb.index]
-                                }     
-                            }
-                    } else if (any(arefactors)){
-                       Xc.cond[, names(data)[C[[", 1:length(C), "]]][which(arefactors)]] <- factor(levels(data[, names(data)[C[[", 1:length(C), "]]][which(arefactors)]])[which.min(abs(input$plotC", 1:length(C), "click$x - (1:length(levels(data[, names(data)[C[[", 1:length(C), "]]][which(arefactors)]])))))], levels = levels(data[, names(data)[C[[", 1:length(C), "]]][which(arefactors)]]))
-                        Xc.cond[, names(data)[C[[", 1:length(C), "]]][which(!arefactors)]] <- input$plotC", 1:length(C), "click$y
-                        } else {
-                            Xc.cond[, names(data)[C[[", 1:length(C), "]]][1]] <- input$plotC", 1:length(C), "click$x
-                            Xc.cond[, names(data)[C[[", 1:length(C), "]]][2]] <- input$plotC", 1:length(C), "click$y
-                        }
-            
-                }
-                assign('Xc.cond', Xc.cond, envir = tmp) 
-            }            
-            
-                plotxc(xc = data[, C[[", 1:length(C), "]]], 
-                    xc.cond = get('Xc.cond', envir = tmp)[, names(data)[C[[", 1:length(C), "]]]],
-                    name = colnames(data)[C[[", 1:length(C), "]]],
-                    select.colour = 'blue', select.lwd = 2, cex.axis = cex.axis,
-                    cex.lab = cex.lab, tck = tck, shiny = TRUE)
-            })
-            ", sep = "", collapse = "\n"),"
-            observeEvent(input$saveButton, {
-                n.selector.cols <- ceiling(length(C) / 4L)
-                select.colwidth <- max(min(0.18 * n.selector.cols, 0.45), 0.2)  
-                width <- 8.5 + 2 * n.selector.cols 
-                filename <- paste('snapshot_', gsub(':', '.', gsub(' ', '_', Sys.time())), '.pdf', sep = '') 
-                pdf(file = filename, width = width, height = 8)
-                ceplot.static(data = data, model = model, response = response, 
-                    S = S, C = C, sigma = input$sigma, distance = input$type, 
-                    cex.axis = cex.axis, cex.lab = cex.lab, tck = tck, 
-                    view3d = if (!is.null(input$tab)) input$tab == 2 else FALSE, Xc.cond = get('Xc.cond', envir = tmp), 
-                    theta3d = if (!is.null(input$theta)) input$theta else NULL, phi3d = if (!is.null(input$phi)) input$phi else NULL)
-                dev.off()
-            })
-        }
-    ")))
+      } else plotOutput("plotS", height = hS, width = hS),
+      conditionalPanel(condition = "input.tab == 2",
+        numericInput("phi", "Vertical rotation: ", 20, -180, 180),
+        numericInput("theta", "Horizontal rotation: ", 45, -180, 180)),
+      sliderInput("threshold", "Distance threshold: ", 0.01, 5, step =
+        0.01, value = if (is.null(sigma)) 1 else sigma),
+      radioButtons("distance", "Distance function type:", c("euclidean",
+        "maxnorm")),
+      hr(),
+      downloadButton("download", "Download snapshot (pdf)")',
+      if (!deploy) ',\n      actionButton("openDeploy", "Deploy app"),
+      br(),
+      conditionalPanel(condition = "input.openDeploy",
+      radioButtons("deployLocation", "", c("to web via rsconnect",
+        "to working directory")),
+        textInput("appName", label = "Application name (valid directory name)"),
+        actionButton("deployButton", "Deploy app")
+      )','
+    ),
+    ', if (identical(length(S), 2L)) 'column(1,
+      plotOutput("legend", height = hS, width = "100px")
+    ),','
+    column(7,
+      fluidRow(helpText("Condition selectors")),
+      column(4,
+        plotOutput("plot1", click = "plot_click1", height = h, width = h),
+        plotOutput("plot2", click = "plot_click2", height = h, width = h),
+        plotOutput("plot3", click = "plot_click3", height = h, width = h),
+        tableOutput("info")
+      )
+      ', if (lenC > 3){',column(4,
+        plotOutput("plot4", click = "plot_click4", height = h, width = h),
+        plotOutput("plot5", click = "plot_click5", height = h, width = h),
+        plotOutput("plot6", click = "plot_click6", height = h, width = h)
+      )'},
+      if (lenC > 6){',column(4,
+        plotOutput("plot7", click = "plot_click4", height = h, width = h),
+        plotOutput("plot8", click = "plot_click5", height = h, width = h),
+        plotOutput("plot9", click = "plot_click6", height = h, width = h)
+      )'}, '
+    )
+  )
+  ')
+  }
 
+  ## Function to create the shiny server.R file. 'deploy' switch removes certain
+  ## elements when deploying the application.
 
-    shiny::shinyApp(ui, server)
+  server <- function (deploy = FALSE){
+  paste(
+'  ## This server.R file was created by condvis:::ceplot.shiny
+
+  library(condvis)
+  library(shiny)
+
+  ## Include the packages required for the application. If these have not been
+  ## specified, the package list will be inferred from the search path at the
+  ## time ceplot was called.
+  \n ',
+  paste(paste0("library(", packages, ")"), collapse = "\n  ")
+  ,'
+
+  ## Load the objects that were in the environment of the ceplot call.
+
+  load("app.Rdata")
+
+  ## Shiny server
+
+  shinyServer(function (input, output)
+  {
+    ## Reactive value for the current condition/section
+
+    rv <- reactiveValues(xc.cond = xc.cond)
+
+    ## Event listeners for mouseclicks on plots
+    ',
+    paste('
+    observeEvent({input$plot_click', seqC,'}, {
+      rv$xc.cond[, xcplots[[', seqC,']]$name] <<- condvis:::update.xcplot(
+        xcplots[[', seqC,']], xclick = input$plot_click', seqC,'$x, yclick =
+        input$plot_click', seqC,'$y, user = TRUE, draw = FALSE)$xc.cond.old
+    })
+    ', sep = '', collapse = '\n'),
+    '
+    ## Do condition selector plots.
+    ',
+    paste("
+    output$plot", seqC, " <- renderPlot({
+      i <- ", seqC, "
+      xcplots[[i]] <<- plotxc(xc = data[, C[[i]]], xc.cond = rv$xc.cond[1L,
+        C[[i]]], name = colnames(data[, C[[i]], drop = FALSE]), select.colour =
+        select.colour, select.cex = select.cex)
+    })"
+    , sep = "", collapse = "\n"), '
+
+    ## Next do the section visualisation.
+
+    vw <- NULL
+    output$plotS <- renderPlot({
+      vw <<- vwfun(xc.cond = rv$xc.cond, sigma = input$threshold, distance =
+        input$distance, lambda = lambda)
+      xsplot <<- condvis:::plotxs(xs = data[, S, drop = FALSE], data[, response
+        , drop = FALSE], xc.cond = rv$xc.cond, model = model, col = col, weights
+        = vw$k, view3d = FALSE, conf = conf, probs = probs, pch = pch)
+    })
+
+    ## Section visualisation for 3-D perspective mesh.
+
+    output$plotS3D <- renderPlot({
+      vw <<- vwfun(xc.cond = rv$xc.cond, sigma = input$threshold, distance =
+        input$distance, lambda = lambda)
+      xsplot <<- condvis:::plotxs(xs = data[, S, drop = FALSE], data[, response
+        , drop = FALSE], xc.cond = rv$xc.cond, model = model, col = col,
+        weights = vw$k, view3d = TRUE, conf = conf, probs = probs, pch = pch)
+    })
+
+    ## Legend for section
+
+    output$legend <- renderPlot({
+      condvis:::xslegend(y = data[, response[1]], name = response[1])
+    })
+
+    ## Give a basic table showing the section/condition values
+
+    output$info <- renderTable({
+      structure(rv$xc.cond, row.names = "section")
+    })
+
+    ## Allow the user to download a snapshot of the current visualisation
+
+    output$download <- downloadHandler(filename = function() { paste0(
+      "condvis-download-", condvis:::timestamp1(), ".pdf")}, {
+      function(file){
+        n.selector.cols <- ceiling(length(C) / 4L)
+        select.colwidth <- max(min(0.18 * n.selector.cols, 0.45), 0.2)
+        width <- 8.5 + 2 * n.selector.cols
+        pdf(file = file, width = width, height = 8)
+        condvis:::ceplot.static(data = data, model = model, response = response,
+          S = S, C = C, cex.axis = cex.axis, cex.lab = cex.lab, tck = tck,
+          xc.cond = rv$xc.cond, weights = vw$k, col  = col, select.colour =
+          select.colour, select.cex = select.cex, conf = conf, probs = probs)
+        dev.off()
+      }
+    })',
+    if (!deploy){'
+
+    ## Code after here relates to deploying the current application, and will
+    ## not be present in a deployed application.
+
+    observeEvent(input$deployButton, {
+      folderpath <- if (input$deployLocation == "to working directory")
+        wd
+      else tempdir()
+      appname <- if (input$appName == "")
+        "condvis-shinyapp"
+      else input$appName
+      deploy.path <- paste0(folderpath, "/", appname)
+      dir.create(deploy.path, showWarnings = FALSE)
+      write(ui(deploy = TRUE), file = paste0(deploy.path, "/ui.R"))
+      write(server(deploy = TRUE), file = paste0(deploy.path, "/server.R"))
+      file.copy(from = paste0(app.path, "/app.Rdata"), to = paste0(deploy.path,
+        "/app.Rdata"), overwrite = TRUE)
+      if (input$deployLocation == "to web via rsconnect"){
+        if (!requireNamespace("rsconnect", quietly = TRUE))
+          stop("requires package \'rsconnect\'")
+        else if (!exists("deployApp")) attachNamespace("rsconnect")
+        rsconnect::deployApp(deploy.path)
+      }
+    })'}, '
+  })
+  ')
+  }
+
+  ## Create a temporary directory to store the application files (including a
+  ## snapshot of the objects in this environment in "app.Rdata") and run the
+  ## application
+
+  app.path <- paste0(tempdir(), "/condvis-shinyapp-temp")
+  dir.create(app.path, showWarnings = FALSE)
+  write(ui(), file = paste0(app.path, "/ui.R"))
+  write(server(), file = paste0(app.path, "/server.R"))
+  save(list = ls(), file = paste0(app.path, "/app.Rdata"))
+  shiny::runApp(appDir = app.path)
 }
