@@ -1,8 +1,8 @@
 Package: condvis
 Type: Package
 Title: Conditional Visualization for Statistical Models
-Version: 0.3-0
-Date: 2016-07-01
+Version: 0.3-3
+Date: 2016-07-04
 Authors@R: c(
   person("Mark", "O'Connell", email = "mark.oconnell@maths.nuim.ie",
   role = c("aut", "cre")),
@@ -21,7 +21,7 @@ LazyData: false
 BugReports: https://github.com/markajoc/condvis/issues
 URL: http://markajoc.github.io/condvis/
 RoxygenNote: 5.0.1.9000
-Packaged: 2016-06-28 11:33:27 UTC; mark
+Packaged: 2016-07-04 13:03:12 UTC; mark
 Author: Mark O'Connell [aut, cre],
   Catherine Hurley [ths],
   Katarina Domijan [ths],
@@ -30,4 +30,4 @@ Author: Mark O'Connell [aut, cre],
 Maintainer: Mark O'Connell <mark.oconnell@maths.nuim.ie>
 NeedsCompilation: no
 Repository: CRAN
-Date/Publication: 2016-06-28 23:47:53
+Date/Publication: 2016-07-04 20:29:12
