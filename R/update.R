@@ -78,19 +78,27 @@ function (object, xclick, yclick, xc.cond = NULL, user = FALSE, draw = TRUE,
         min(object$xc[, 2], na.rm = TRUE), na.rm = TRUE)
       xc.cond.new <- c(xc.cond.new.x, xc.cond.new.y)
     } else {
+      xc.cond.new.x <- xc.cond[, 1]
+      xc.cond.new.y <- xc.cond[, 2]
       xc.cond.new <- xc.cond
     }
     if (any(xc.cond.new != object$xc.cond.old)){
-      if (nrow(object$xc) > 2000 && requireNamespace("gplots", quietly = TRUE)
-        && draw){
+      if (object$hist2d && nrow(object$xc) > 2000 && requireNamespace("gplots",
+        quietly = TRUE) && draw){
         par(bg = "white")
         dev.hold()
         screen(new = TRUE)
-        object <- plotxc(xc = object$xc, xc.cond = xc.cond.new, name =
-          object$name, select.colour = object$select.colour, select.lwd =
-          object$select.lwd, cex.axis = object$cex.axis, cex.lab =
-          object$cex.lab, tck = object$tck)
+        b <- seq(0.35, 1, length.out = 16)
+        gplots::hist2d(object$xc[, 1], object$xc[, 2], nbins = 50, col =
+          c("white", rgb(1 - b, 1 - b, 1 - b)), xlab = colnames(object$xc)[1],
+          ylab = colnames(object$xc)[2], cex.axis = object$cex.axis, cex.lab =
+          object$cex.lab, tcl = object$tck, FUN = function(x) min(length(x),
+          object$fullbin))
+        abline(v = xc.cond.new.x, h = xc.cond.new.y, lwd = object$select.lwd,
+          col = object$select.colour)
+        box()
         dev.flush()
+        object$xc.cond.old <- xc.cond.new
       } else {
         if (draw){
           abline(v = object$xc.cond.old[1], h = object$xc.cond.old[2], lwd =
@@ -121,6 +129,8 @@ function (object, xclick, yclick, xc.cond = NULL, user = FALSE, draw = TRUE,
       } else object$xc.cond.old[, 2]
       xc.cond.new <- c(xc.cond.new.x, xc.cond.new.y)
     } else {
+      xc.cond.new.x <- xc.cond[, 1]
+      xc.cond.new.y <- xc.cond[, 2]
       xc.cond.new <- xc.cond
     }
     if (any(xc.cond.new != object$xc.cond.old)){
@@ -316,13 +326,8 @@ function (object, xc.cond = NULL, weights = NULL, view3d = NULL, theta3d = NULL,
   } else {
     if (!identical(length(weights), nrow(object$y)))
       stop("'weights' should be of length equal to number of observations")
-    weightsgr0 <- which(weights > 0)
-    data.order <- weightsgr0[order(weights[weightsgr0])]
-    newcol <- (col2rgb(object$col[data.order]) * matrix(rep(weights[data.order], 3),
-      nrow = 3, byrow = TRUE) / 255) + matrix(rep(1 - weights[data.order], 3),
-      nrow = 3, byrow = TRUE)
-    data.colour <- rep(NA, object$ny)
-    data.colour[data.order] <- rgb(t(newcol))
+    data.colour <- weightcolor(object$col, weights)
+    data.order <- attr(data.colour, "order")
   }
   theta3d <- if (!is.null(theta3d))
     theta3d

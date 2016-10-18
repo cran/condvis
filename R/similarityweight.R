@@ -17,7 +17,7 @@
 #' @param lambda A constant to multiply by the number of categorical
 #'   mismatches, before adding to the Minkowski distance, to give a general
 #'   dissimilarity measure. If left \code{NULL}, behaves as though \code{lambda}
-#'   is set larger than \code{sigma}, meaning that one factor mismatch
+#'   is set larger than \code{threshold}, meaning that one factor mismatch
 #'   guarantees zero weight.
 #'
 #' @return A numeric vector or matrix, with values from 0 to 1. The similarity
@@ -150,14 +150,12 @@ function (xc)
     ##
     ## Convert the dissimilarity to similarity weights 'k', between 0 and 1.
 
-    if (length(factormatches) > 0){
+    if ((lfm <- length(factormatches)) > 0){
       if (all(arefactors)){
         if (is.null(lambda)){
-          k[factormatches] <- 1
+          d <- rep(0, lfm)
         } else {
           d <- lambda * (sum(arefactors) - nfactormatches[factormatches]) ^ p
-          k[factormatches] <- c(1, 0.7, 0.4, 0)[findInterval(d, c(0, (0.3 *
-            sigma) ^ p, (0.6 * sigma) ^ p, sigma ^ p))]
         }
       } else {
         xcond.scaled <- (xc.cond.num - attr(x.scaled, "scaled:center")) / attr(
@@ -166,9 +164,8 @@ function (xc)
           distance, "maxnorm")) + if (any(arefactors) && !is.null(lambda))
           (lambda * (sum(arefactors) - nfactormatches[factormatches])) ^ p
           else 0
-        k[factormatches] <- c(1, 0.7, 0.4, 0)[findInterval(d, c(0, (0.3 * sigma)
-          ^ p, (0.6 * sigma) ^ p, sigma ^ p))]
       }
+      k[factormatches] <- pmax(0, 1 - (d ^ (1 / p)) / (sigma))
     }
     list(k = k, sigma = sigma, distance = distance)
   }

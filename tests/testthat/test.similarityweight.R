@@ -52,6 +52,12 @@ test_that("setting threshold to Inf gives weight one to everything", {
     == 1))
 })
 
+d <- data.frame(x = runif(500))
+test_that("for 1-d continuous case, maxnorm and euclidean are identical", {
+  expect_equal(similarityweight(d[1:2, 1, drop = FALSE], d, distance = "maxnorm"
+    ), similarityweight(d[1:2, 1, drop = FALSE], d, distance = "euclidean"))
+})
+
 test_that("internal visual weight function returns a function", {
   expect_is(.similarityweight(mtcars), "function")
   expect_error(.similarityweight())

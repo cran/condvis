@@ -4,7 +4,7 @@ function (data, model, response = NULL, S = NULL, C = NULL, sigma = NULL, lambda
   view3d = FALSE, Corder = "default", conf = FALSE, separate = TRUE,
   select.colour = "blue", select.cex = 1, select.lwd = 2, select.type =
   "minimal", probs = FALSE, col = "black", pch = 1, residuals = FALSE, xc.cond =
-  NULL, packages = NULL)
+  NULL, packages = NULL, xsplotpar = NULL, modelpar = NULL, xcplotpar = NULL)
 {
   ## Check for shiny package, and stop if not installed
 
@@ -134,14 +134,14 @@ function (data, model, response = NULL, S = NULL, C = NULL, sigma = NULL, lambda
   paste(paste0("library(", packages, ")"), collapse = "\n  ")
   ,'
 
-  ## Load the objects that were in the environment of the ceplot call.
-
-  load("app.Rdata")
-
   ## Shiny server
 
   shinyServer(function (input, output)
   {
+    ## Load the objects that were in the environment of the ceplot call.
+
+    #load("app.Rdata")
+
     ## Reactive value for the current condition/section
 
     rv <- reactiveValues(xc.cond = xc.cond)
@@ -162,8 +162,9 @@ function (data, model, response = NULL, S = NULL, C = NULL, sigma = NULL, lambda
     output$plot", seqC, " <- renderPlot({
       i <- ", seqC, "
       xcplots[[i]] <<- plotxc(xc = data[, C[[i]]], xc.cond = rv$xc.cond[1L,
-        C[[i]]], name = colnames(data[, C[[i]], drop = FALSE]), select.colour =
-        select.colour, select.cex = select.cex)
+        C[[i]]], name = colnames(data[, C[[i]], drop = FALSE]), trim =
+        xcplotpar$trim, select.colour = select.colour, select.cex = select.cex,
+        hist2d = xcplotpar$hist2d, fullbin = xcplotpar$fullbin)
     })"
     , sep = "", collapse = "\n"), '
 
@@ -175,7 +176,10 @@ function (data, model, response = NULL, S = NULL, C = NULL, sigma = NULL, lambda
         input$distance, lambda = lambda)
       xsplot <<- condvis:::plotxs(xs = data[, S, drop = FALSE], data[, response
         , drop = FALSE], xc.cond = rv$xc.cond, model = model, col = col, weights
-        = vw$k, view3d = FALSE, conf = conf, probs = probs, pch = pch)
+        = vw$k, view3d = FALSE, conf = conf, probs = probs, pch = pch,
+        model.colour = modelpar$col, model.lwd = modelpar$lwd, model.lty =
+        modelpar$lty, main = xsplotpar$main, xlim = xsplotpar$xlim, ylim =
+        xsplotpar$ylim)
     })
 
     ## Section visualisation for 3-D perspective mesh.
@@ -185,7 +189,10 @@ function (data, model, response = NULL, S = NULL, C = NULL, sigma = NULL, lambda
         input$distance, lambda = lambda)
       xsplot <<- condvis:::plotxs(xs = data[, S, drop = FALSE], data[, response
         , drop = FALSE], xc.cond = rv$xc.cond, model = model, col = col,
-        weights = vw$k, view3d = TRUE, conf = conf, probs = probs, pch = pch)
+        weights = vw$k, view3d = TRUE, conf = conf, probs = probs, pch = pch,
+        model.colour = modelpar$col, model.lwd = modelpar$lwd, model.lty =
+        modelpar$lty, main = xsplotpar$main, xlim = xsplotpar$xlim, ylim =
+        xsplotpar$ylim)
     })
 
     ## Legend for section
@@ -234,6 +241,8 @@ function (data, model, response = NULL, S = NULL, C = NULL, sigma = NULL, lambda
       write(server(deploy = TRUE), file = paste0(deploy.path, "/server.R"))
       file.copy(from = paste0(app.path, "/app.Rdata"), to = paste0(deploy.path,
         "/app.Rdata"), overwrite = TRUE)
+      file.copy(from = paste0(app.path, "/global.R"), to = paste0(deploy.path,
+        "/global.R"), overwrite = TRUE)  
       if (input$deployLocation == "to web via rsconnect"){
         if (!requireNamespace("rsconnect", quietly = TRUE))
           stop("requires package \'rsconnect\'")
@@ -253,6 +262,9 @@ function (data, model, response = NULL, S = NULL, C = NULL, sigma = NULL, lambda
   dir.create(app.path, showWarnings = FALSE)
   write(ui(), file = paste0(app.path, "/ui.R"))
   write(server(), file = paste0(app.path, "/server.R"))
-  save(list = ls(), file = paste0(app.path, "/app.Rdata"))
+  write("load(\"app.Rdata\", envir=.GlobalEnv)\n", file = paste0(app.path,
+    "/global.R"))
+  save(list = union(ls(), ls(.GlobalEnv)), file = paste0(app.path, "/app.Rdata")
+    )
   shiny::runApp(appDir = app.path)
 }

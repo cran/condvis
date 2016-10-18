@@ -7,12 +7,20 @@
 #' @param xc.cond Same type as \code{xc}, representing a single point in data
 #'   space to highlight.
 #' @param name The variable name for \code{xc}
+#' @param trim Logical; if \code{TRUE}, long tails of continuous data are
+#'   chopped off at the 5th and 95th percentiles.
 #' @param select.colour Colour to highlight \code{xc.cond}
 #' @param select.lwd Line weight to highlight \code{xc.cond}
 #' @param cex.axis Axis text scaling
 #' @param cex.lab Label text scaling
 #' @param tck Plot axis tick size
 #' @param select.cex Plot symbol size
+#' @param hist2d If \code{TRUE}, a scatterplot is visualised as a 2-D histogram.
+#'   Default behaviour is to use a 2-D histogram if there are over 2,000
+#'   observations.
+#' @param fullbin A cap on the counts in a bin for the 2-D histogram, helpful
+#'   with skewed data. Larger values give more detail about data density.
+#'   Defaults to 25.
 #' @param ... Passed to \code{condvis:::spineplot2}.
 #'
 #' @return Produces a plot, and returns a list containing the relevant
@@ -21,28 +29,39 @@
 #' @seealso \code{\link{ceplot}},  \code{\link{plotxs}}.
 #'
 #' @examples
-#' ## histogram, highlighting the first case
+#' ## Histogram, highlighting the first case.
+#'
 #' data(mtcars)
 #' obj <- plotxc(mtcars[, "mpg"], mtcars[1, "mpg"])
 #' obj$usr
 #'
-#' ## barplot, highlighting 'cyl' = 6
+#' ## Barplot, highlighting 'cyl' = 6.
+#'
 #' plotxc(as.factor(mtcars[, "cyl"]), 6, select.colour = "blue")
 #'
-#' ## scatterplot, highlighting case 25
+#' ## Scatterplot, highlighting case 25.
+#'
 #' plotxc(mtcars[, c("qsec", "wt")], mtcars[25, c("qsec", "wt")],
 #'   select.colour = "blue", select.lwd = 1, lty = 3)
 #'
-#' ## boxplot, where 'xc' contains one factor, and one numeric
+#' ## Boxplot, where 'xc' contains one factor, and one numeric.
+#'
 #' mtcars$carb <- as.factor(mtcars$carb)
 #' plotxc(mtcars[, c("carb", "wt")], mtcars[25, c("carb", "wt")],
 #'   select.colour = "red", select.lwd = 3)
 #'
-#' ## spineplot, where 'xc' contains two factors
+#' ## Spineplot, where 'xc' contains two factors.
+#'
 #' mtcars$gear <- as.factor(mtcars$gear)
 #' mtcars$cyl <- as.factor(mtcars$cyl)
 #' plotxc(mtcars[, c("cyl", "gear")], mtcars[25, c("cyl", "gear")],
 #'   select.colour = "red")
+#'
+#' ## Effect of 'trim'.
+#'
+#' x <- c(-200, runif(400), 200)
+#' plotxc(x, 0.5, trim = FALSE, select.colour = "red")
+#' plotxc(x, 0.5, trim = TRUE, select.colour = "red")
 #'
 #' @seealso \code{\link{plotxs}}, \code{\link{ceplot}}, \code{\link{condtour}}
 
@@ -51,9 +70,16 @@
 ## space.
 
 plotxc <-
-function (xc, xc.cond, name = NULL, select.colour = NULL, select.lwd = NULL,
-  cex.axis = NULL, cex.lab = NULL, tck = NULL, select.cex = 1, ...)
+function (xc, xc.cond, name = NULL, trim = NULL, select.colour = NULL,
+  select.lwd = NULL, cex.axis = NULL, cex.lab = NULL, tck = NULL, select.cex = 1
+  , hist2d = NULL, fullbin = NULL, ...)
 {
+  hist2d <- if (is.null(hist2d))
+    TRUE
+  else hist2d
+  trim <- if (is.null(trim))
+    TRUE
+  else trim
   select.colour <- if (is.null(select.colour))
     "black"
   else select.colour
@@ -83,10 +109,12 @@ function (xc, xc.cond, name = NULL, select.colour = NULL, select.lwd = NULL,
 
       ## Histogram
 
-      if (diff(range(xc, na.rm = TRUE)) / diff(range(xcnew <- xc[findInterval(
-        xc, quantile(xc, c(0.025, 0.975), na.rm = TRUE)) == 1], na.rm = TRUE)) >
-        3){
-        xc <- xcnew
+      ## To deal with long tails, we try chopping them off.
+      if (trim){
+        if (diff(range(xc, na.rm = TRUE)) / diff(q1 <- quantile(xc,
+          c(0.05, 0.95), na.rm = TRUE)) > 3){
+          xc <- xc[findInterval(xc, q1) == 1]
+        }
       }
       histmp <- hist(xc, xlab = name, ylab = "", main = "", cex.axis = cex.axis,
         cex.lab = cex.lab, tcl = tck, mgp = c(1.5, 0.5, 0.1))
@@ -153,11 +181,31 @@ function (xc, xc.cond, name = NULL, select.colour = NULL, select.lwd = NULL,
 
           ## Scatterplot, going to 2-D histogram if required/possible
 
-          if (nrow(xc) > 2000 && requireNamespace("gplots", quietly = TRUE)){
+          ## To deal with long tails, we try chopping them off.
+
+          if (trim){
+            index1 <- index2 <- rep(TRUE, nrow(xc))
+            if (diff(range(xc[, 1], na.rm = TRUE)) / diff(q1 <- quantile(xc[, 1]
+              , c(0.05, 0.95), na.rm = TRUE)) > 3){
+              index1 <- findInterval(xc[, 1], q1) == 1
+            }
+            if (diff(range(xc[, 2], na.rm = TRUE)) / diff(q2 <- quantile(xc[, 2]
+              , c(0.05, 0.95), na.rm = TRUE)) > 3){
+              index2 <- findInterval(xc[, 2], q2) == 1
+            }
+            xc <- xc[index1 & index2, ]
+          }
+
+          if (hist2d && nrow(xc) > 2000 && requireNamespace("gplots", quietly =
+            TRUE)){
             b <- seq(0.35, 1, length.out = 16)
+            fullbin <- if (is.null(fullbin))
+              25
+            else fullbin
             gplots::hist2d(xc[, 1], xc[, 2], nbins = 50, col = c("white", rgb(1
               - b, 1 - b, 1 - b)), xlab = colnames(xc)[1], ylab = colnames(xc)[
-              2], cex.axis = cex.axis, cex.lab = cex.lab, tcl = tck)
+              2], cex.axis = cex.axis, cex.lab = cex.lab, tcl = tck, FUN =
+              function(x) min(length(x), fullbin))
             box()
           } else {
             plot.default(xc[, 1], xc[, 2], xlab = colnames(xc)[1], ylab =
@@ -171,14 +219,15 @@ function (xc, xc.cond, name = NULL, select.colour = NULL, select.lwd = NULL,
       }
     } else stop("Unexpected value for 'xc'")
   }
-  structure(list(xc = xc, xc.cond.old = xc.cond, name = name, select.colour =
-    select.colour, mar = mar, select.lwd = select.lwd, select.cex = select.cex,
-    cex.axis = cex.axis, cex.lab = cex.lab, tck = tck, device = dev.cur(), usr =
-    par("usr"), screen = screen(), screen.coords = par("fig"), plot.type =
-    plot.type, sptmp = if (exists("sptmp")) sptmp else NULL, factorcoords = if (
-    exists("factorcoords")) factorcoords else NULL, histmp = if (exists("histmp"
-    )) histmp else NULL, bartmp = if (exists("bartmp")) bartmp else NULL, boxtmp
-    = if (exists("boxtmp")) boxtmp else NULL, ...), class = "xcplot")
+  invisible(structure(list(xc = xc, xc.cond.old = xc.cond, name = name,
+    select.colour = select.colour, mar = mar, select.lwd = select.lwd,
+    select.cex = select.cex, cex.axis = cex.axis, cex.lab = cex.lab, tck = tck,
+    device = dev.cur(), usr = par("usr"), screen = screen(), screen.coords =
+    par("fig"), plot.type = plot.type, sptmp = if (exists("sptmp")) sptmp else
+    NULL, factorcoords = if (exists("factorcoords")) factorcoords else NULL,
+    histmp = if (exists("histmp")) histmp else NULL, bartmp = if (exists(
+    "bartmp")) bartmp else NULL, boxtmp = if (exists("boxtmp")) boxtmp else
+    NULL, hist2d = hist2d, fullbin = fullbin, ...), class = "xcplot"))
 }
 
 #' @title Condition selector plot
@@ -235,12 +284,12 @@ function (Xc, Xc.cond, select.colour = NULL, select.lwd = 3,
   parcoord(Xc.num, main = "Condition selector")
   points(xcoord, ycoord, col = select.colour, type = "l", lwd = select.lwd)
   points(xcoord, ycoord, col = select.colour, pch = 16)
-  structure(list(Xc = Xc, Xc.cond = Xc.cond, Xc.num.scaled = Xc.num.scaled,
-    xc.num.max = apply(Xc.num, 2, max), xc.num.min = apply(Xc.num, 2, min),
-    xcoord = xcoord, ycoord = ycoord, plot.type = "pcp", select.colour =
-    select.colour, select.cex = select.cex, select.lwd = select.lwd, mar =
-    par("mar"), usr = par("usr"), factorindex = factorindex, device = dev.cur(),
-    screen = screen()), class = "xcplot")
+  invisible(structure(list(Xc = Xc, Xc.cond = Xc.cond, Xc.num.scaled =
+    Xc.num.scaled, xc.num.max = apply(Xc.num, 2, max), xc.num.min = apply(
+    Xc.num, 2, min), xcoord = xcoord, ycoord = ycoord, plot.type = "pcp",
+    select.colour = select.colour, select.cex = select.cex, select.lwd =
+    select.lwd, mar = par("mar"), usr = par("usr"), factorindex = factorindex,
+    device = dev.cur(), screen = screen()), class = "xcplot"))
 }
 
 #' @rdname plotxc.pcp
@@ -309,9 +358,10 @@ function (Xc, Xc.cond, select.colour = NULL, select.lwd = 3,
   names(coords) <- c("xleft", "xright", "ybottom", "ytop")
   coords$xcplots.index <- scr2
   dev.flush()
-  structure(list(Xc = Xc, Xc.cond = Xc.cond, Xc.num = Xc.num, Xc.cond.num =
-    Xc.cond.num, rows = rows, cols = cols, factorindex = factorindex, scr2 =
-    scr2, coords = coords, plot.type = "full", device = dev.cur(), select.colour
-    = select.colour, select.lwd = select.lwd, select.cex = select.cex,
-    mar.matrix = mar.matrix, usr.matrix = usr.matrix), class = "xcplot")
+  invisible(structure(list(Xc = Xc, Xc.cond = Xc.cond, Xc.num = Xc.num,
+    Xc.cond.num = Xc.cond.num, rows = rows, cols = cols, factorindex =
+    factorindex, scr2 = scr2, coords = coords, plot.type = "full", device =
+    dev.cur(), select.colour = select.colour, select.lwd = select.lwd,
+    select.cex = select.cex, mar.matrix = mar.matrix, usr.matrix = usr.matrix),
+    class = "xcplot"))
 }
