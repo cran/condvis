@@ -1,13 +1,13 @@
 Package: condvis
 Type: Package
 Title: Conditional Visualization for Statistical Models
-Version: 0.4-1
-Date: 2016-10-17
+Version: 0.4-2
+Date: 2017-10-11
 Authors@R: c(
-  person("Mark", "O'Connell", email = "mark.oconnell@maths.nuim.ie",
+  person("Mark", "O'Connell", email = "mark_ajoc@yahoo.ie",
   role = c("aut", "cre")),
-  person("Catherine", "Hurley", role = "ths"),
-  person("Katarina", "Domijan", role = "ths"),
+  person("Catherine", "Hurley", role = "aut"),
+  person("Katarina", "Domijan", role = "aut"),
   person("Achim", "Zeileis", role = "ctb", comment = "spineplot, see copied.R"),
   person("R Core Team", role = "ctb", comment = "barplot, see copied.R") )
 Depends: R (>= 2.1.0)
@@ -21,13 +21,13 @@ LazyData: false
 BugReports: https://github.com/markajoc/condvis/issues
 URL: http://markajoc.github.io/condvis/
 RoxygenNote: 5.0.1.9000
-Packaged: 2016-10-17 22:12:43 UTC; mark
+Packaged: 2017-10-11 00:06:24 UTC; mark
 Author: Mark O'Connell [aut, cre],
-  Catherine Hurley [ths],
-  Katarina Domijan [ths],
+  Catherine Hurley [aut],
+  Katarina Domijan [aut],
   Achim Zeileis [ctb] (spineplot, see copied.R),
   R Core Team [ctb] (barplot, see copied.R)
-Maintainer: Mark O'Connell <mark.oconnell@maths.nuim.ie>
+Maintainer: Mark O'Connell <mark_ajoc@yahoo.ie>
 NeedsCompilation: no
 Repository: CRAN
-Date/Publication: 2016-10-18 00:54:17
+Date/Publication: 2017-10-11 08:01:02 UTC
