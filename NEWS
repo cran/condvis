@@ -4,6 +4,26 @@ condvis: Conditional Visualisation for Statistical Models
 News
 ---------------------------------------------------------
 
+Version 0.5-1 2018-09-13
+
+  * Changed check for zero variance (introduced in 0.5-0) to work for factors.
+  * Fixed S3 method treatment for `interpolate`.
+
+Version 0.5-0 2018-09-01
+
+  * Fixed bug where `arrangeC` would return pairs of the same variable if there
+    were no bivariate relationships detected by `savingby2d`.
+  * Added a generic function `interpolate`, with methods for standard data
+    types.
+  * Added an error for negative threshold dissimilarities in `similarityweight`.
+  * Fixed bug where variables with zero variance caused an error in
+    `similarityweight`.
+
+Version 0.4-3 2017-10-19
+
+  * Fixed bug where `ceplot.shiny` dropped `xc.cond` to a vector and threw an
+    error.
+
 Version 0.4-2 2017-10-11
   * New release for JSS publication. Small changes to documentation, and some
     default colours have been changed.
@@ -14,7 +34,7 @@ Version 0.4-0 2016-10-17
   * In `similarityweight`, the weight values are no longer discretised. All
     values between 0 and 1 are allowed.
   * New unexported function `weightcolor` used to weight colours using
-  similarity weight.
+    similarity weight.
   * Fixed bug; not passing `pch` to snapshot for `ceplot.interactive`.
 
 Version 0.3-5 2016-09-26

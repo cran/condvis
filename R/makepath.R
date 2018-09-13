@@ -36,24 +36,6 @@ function (x, ncentroids, ninterp = 4)
       ninterp <- ninterp + 1
   }
 
-  ## Interpolation function.
-
-  interp <- function(y, n = ninterp)
-  {
-    out <- vector()
-    if (is.factor(y)){
-      for (i in 1:(length(y) - 1L)){
-        out <- c(out, rep(y[i], ceiling(n / 2)), rep(y[i + 1], floor(n / 2)))
-      }
-      return(factor(levels(y)[c(out)], levels = levels(y)))
-    } else {
-      for (i in 1:(length(y) - 1L)){
-        out <- c(out, seq(y[i], y[i + 1L], length.out = n + 1L)[-(n + 1L)])
-      }
-    }
-    c(out, tail(y, 1))
-  }
-
   ## If we have factors, do partitioning around medoids (PAM) using the daisy
   ## distance from the 'cluster' package.
 
@@ -62,7 +44,7 @@ function (x, ncentroids, ninterp = 4)
       stop("requires package 'cluster'")
     d <- cluster::daisy(x)
     clustering <- cluster::pam(d, k = ncentroids)
-    centers <- x[clustering$medoids, ]
+    centers <- x[clustering$medoids, , drop = FALSE]
 
     ## Order the cluster centres using 'DendSer' if available.
 
@@ -72,9 +54,9 @@ function (x, ncentroids, ninterp = 4)
       d.centers <- cluster::daisy(centers)
       h <- hclust(d.centers, method = "single")
       o <- DendSer::DendSer(h, d.centers)
-      centers <- centers[o, ]
+      centers <- centers[o, , drop = FALSE]
     }
-    path <- as.data.frame(lapply(centers, interp))
+    path <- as.data.frame(lapply(centers, interpolate, ninterp = ninterp))
   } else {
 
     ## For all continuous variables, cluster with 'kmeans'
@@ -86,9 +68,6 @@ function (x, ncentroids, ninterp = 4)
     x <- scale(x)
     means <- attr(x, "scaled:center")
     sds <- attr(x, "scaled:scale")
-    #means <- colMeans(x)
-    #sds <- apply(x, 2L, sd)
-    #x <- scale(x)[, ]
     clustering <- kmeans(x[, ], centers = ncentroids)
     centers <- clustering$centers
     o <- TSP::TSP(dist(centers))
@@ -97,7 +76,7 @@ function (x, ncentroids, ninterp = 4)
     centers <- as.data.frame(t(apply(t(apply(centers, 1L, `*`, sds)), 1L, `+`,
       means)))
     rownames(centers) <- NULL
-    path <- as.data.frame(apply(centers, 2L, interp))
+    path <- as.data.frame(lapply(centers, interpolate, ninterp = ninterp))
   }
 
   ## Return the cluster centres and the interpolated path.
