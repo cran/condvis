@@ -1,12 +1,12 @@
-59fb2ad080d46cdd3dd8cce29426fff8 *DESCRIPTION
+f011ba4fd1de239d9321e1e4bc617315 *DESCRIPTION
 28d3388ad4966b5f88bacb960d8d01c0 *NAMESPACE
-34a575619f179e322fba1af5218d9804 *NEWS
+12f61e94891e69e64a21cc26f1735b34 *NEWS
 fa5255a4aa3b2881749e2ebd04f258c8 *R/arrangeC.R
-99e18879d1467283d6cc65efed295d40 *R/ceplot.R
+869f2c5d02bd2b067d967b842bb4d7c5 *R/ceplot.R
 0d499f01ab2d62d85c69fc9169eff38d *R/ceplot.interactive.R
 9c3c4e36e7c0e4b3ecf9c49ce12da826 *R/ceplot.shiny.R
 ccba99590fcfa377c05a9d2918db845f *R/ceplot.static.R
-8b61b70a5e41cef71f932199c6e63f7d *R/condtour.R
+ddac6e742cca38d305a932368b8b0278 *R/condtour.R
 1f484890989f5dbf4adf3099f54ae0e1 *R/cont2color.R
 b0d8ea8d4d01cffe55f650b8c53d3b93 *R/copied.R
 2f137867e6da5a3f5374e052efda3ba5 *R/diagnosticplots.R
@@ -24,7 +24,7 @@ fe33e3c9b77bfa1785aa2f14a79132d7 *R/plotxsres.R
 6dc434f38d92fb07014adbe2296eb974 *R/similarityweight.R
 3f4c3afae784a522967b20a78f6c3afe *R/update.R
 63535c177898f95aedb0c08ec651c930 *R/weightcolor.R
-0dc3c92d372b52505e03451101148c02 *README.md
+325dda8b1771c097ccfab96bc733c76a *README.md
 f451d1cbe355b2806641212e6cd0bb25 *data/crab.rda
 1f4c534f78c883308959c1b1bcdb93a6 *data/powerplant.rda
 be928dc7e41d695fe2496d0c96e336e3 *data/wine.rda
@@ -35,7 +35,7 @@ de01b3f59c08dbc7150ca641811093c9 *inst/CITATION
 95ab84c27e0bdb7f852c88ea6567ac09 *man/arrangeC.Rd
 49846ad3b1963e3eb96941ca3bce0a44 *man/ceplot.Rd
 350c6eae20fee4b69961c84f285788fc *man/condtour.Rd
-8941b2992bb46c2c420d49e43e5ae44e *man/condvis-package.Rd
+5ff00d5ec13a9d47c9e00300aca60e01 *man/condvis-package.Rd
 876810a6dd9c997c231aecc36c926cd7 *man/cont2color.Rd
 4b4868b80f8c8a0e32d91a9fcbdbfb5e *man/crab.Rd
 4f2ff247b726808fecf4c46434e7097b *man/dist1.Rd
